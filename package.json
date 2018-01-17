@@ -1,9 +1,9 @@
 {
-  "name": "homebridge-platform-optoma",
+  "name": "homebridge-plugin-projector-screen",
   "version": "0.0.1",
   "description": "Expose a networked Optoma projector to Homebridge",
   "license": "MIT",
-  "repository": "github:Firehed/homebridge-platform-optoma",
+  "repository": "github:Firehed/homebridge-platform-projector-screen",
   "keywords": [
     "homebridge-plugin",
     "optoma"

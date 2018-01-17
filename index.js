@@ -21,7 +21,7 @@ module.exports = (homebridge) => {
   homebridge.registerAccessory(platformName, platformPrettyName, Screen, true);
 };
 
-const TRAVEL_DURATION = 5; // for debugging; actually 30;
+const TRAVEL_DURATION_SEC = 5; // for debugging; actually 30;
 
 class Screen {
 
@@ -151,7 +151,7 @@ class Screen {
       this.state = this.targetState;
       this.pushCurrentState();
       this.timeout = null;
-    }, TRAVEL_DURATION);
+    }, TRAVEL_DURATION_SEC * 1000);
 
     const direction = this.targetState === "open" ? "down" : "up";
 

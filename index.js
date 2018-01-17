@@ -21,7 +21,7 @@ module.exports = (homebridge) => {
   homebridge.registerAccessory(platformName, platformPrettyName, Screen, true);
 };
 
-const TRAVEL_DURATION_SEC = 5; // for debugging; actually 30;
+const TRAVEL_DURATION_SEC = 30;
 
 class Screen {
 
@@ -70,7 +70,7 @@ class Screen {
 
   getState = (cb) => {
     const value = this.getHomekitState();
-    this.log("GetState returning ",value);
+    this.log.debug("GetState returning ",value);
     cb(null, value);
   }
 
@@ -94,7 +94,7 @@ class Screen {
         value = Characteristic.CurrentDoorState.STOPPED;
         break;
       default:
-        this.log("Current state is weird!", this.state);
+        this.log.debug("Current state is weird!", this.state);
         break;
     }
     return value;
@@ -118,7 +118,7 @@ class Screen {
   }
 
   pushCurrentState = () => {
-    this.log("Pushing out current door state");
+    this.log.debug("Pushing out current door state");
     this.doorService.setCharacteristic(
       Characteristic.CurrentDoorState,
       this.getHomekitState()
@@ -131,7 +131,7 @@ class Screen {
       this.timeout = null;
     }
 
-    this.log("SetState target state", targetState);
+    this.log.debug("SetState target state", targetState);
     switch (targetState) {
       case Characteristic.TargetDoorState.OPEN:
         this.state = "opening";
@@ -142,11 +142,11 @@ class Screen {
         this.targetState = "closed";
         break;
       default:
-        this.log("UNKNOWN TARGET STATE");
+        this.log.debug("UNKNOWN TARGET STATE");
         break;
     }
 
-    this.log("Set state to ", this.state);
+    this.log.debug("Set state to ", this.state);
     this.timeout = setTimeout(() => {
       this.state = this.targetState;
       this.pushCurrentState();
@@ -157,7 +157,7 @@ class Screen {
 
     const url = this.host + '/' + direction;
 
-    this.log('POST' + url);
+    this.log.debug('POST' + url);
 
     fetch(url, { method: "POST" })
       .then(_ => { cb(); });

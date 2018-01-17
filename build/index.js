@@ -38,7 +38,7 @@ class Screen {
     };
 
     this.getServices = () => {
-      return [this.infoService, this.switchService];
+      return [this.infoService, this.doorService];
     };
 
     this.getState = cb => {

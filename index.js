@@ -69,7 +69,7 @@ class Screen {
   getServices = () => {
     return [
       this.infoService,
-      this.switchService,
+      this.doorService,
     ];
   }
 

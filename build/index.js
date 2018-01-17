@@ -21,6 +21,8 @@ module.exports = homebridge => {
   homebridge.registerAccessory(platformName, platformPrettyName, Screen, true);
 };
 
+const TRAVEL_DURATION = 5; // for debugging; actually 30;
+
 class Screen {
 
   // These values are provided via Homebridge
@@ -42,14 +44,26 @@ class Screen {
     };
 
     this.getState = cb => {
+      const value = this.getHomekitState();
+      this.log("GetState returning ", value);
+      cb(null, value);
+    };
+
+    this.getHomekitState = () => {
       // TODO: HTTP state
       let value = Characteristic.CurrentDoorState.STOPPED;
       switch (this.state) {
         case "open":
           value = Characteristic.CurrentDoorState.OPEN;
           break;
+        case "opening":
+          value = Characteristic.CurrentDoorState.OPENING;
+          break;
         case "closed":
           value = Characteristic.CurrentDoorState.CLOSED;
+          break;
+        case "closing":
+          value = Characteristic.CurrentDoorState.CLOSING;
           break;
         case "unknown":
           value = Characteristic.CurrentDoorState.STOPPED;
@@ -58,16 +72,9 @@ class Screen {
           this.log("Current state is weird!", this.state);
           break;
       }
-
-      cb(null, value);
-      return;
-
+      return value;
       /*
-      if (this.lastChecked && this.lastChecked > (Date.now() - this.checkInterval)) {
-        this.log.debug("Using cached power state");
-        return cb(null, this.lastState);
-      }
-       fetch(this.host + '/')
+      fetch(this.host + '/')
         .then(res => {
           if (!res.ok) {
             throw new Error(res.status + ' ' + res.statusText);
@@ -85,35 +92,49 @@ class Screen {
         */
     };
 
+    this.pushCurrentState = () => {
+      this.log("Pushing out current door state");
+      this.doorService.setCharacteristic(Characteristic.CurrentDoorState, this.getHomekitState());
+    };
+
     this.setState = (targetState, cb) => {
+      if (this.timeout) {
+        clearTimeout(this.timeout);
+        this.timeout = null;
+      }
+
       this.log("SetState target state", targetState);
       switch (targetState) {
         case Characteristic.TargetDoorState.OPEN:
-          this.state = "open";
+          this.state = "opening";
+          this.targetState = "open";
           break;
         case Characteristic.TargetDoorState.CLOSED:
-          this.state = "closed";
+          this.state = "closing";
+          this.targetState = "closed";
           break;
         default:
           this.log("UNKNOWN TARGET STATE");
           break;
       }
-      cb();
-      return;
-      // There's a weird interaction (pair of bugs) where this fetch wrapper
-      // lowercases all of the HTTP header keys, and the ESP8266WebServer library
-      // won't parse the POST body unless the Content-Length header is formatted
-      // exactly as such. Fortunately, throwing the value in the query string
-      // allows it to go through just fine.
-      /*
-      const state = on ? "on" : "off";
-      fetch(this.host + '/power?state=' + state, { method: "POST" })
-        .then(_ => {
-          this.lastState = on;
-          this.lastChecked = Date.now();
-          cb();
-        })
-        */
+
+      this.log("Set state to ", this.state);
+      this.pushCurrentState();
+      this.timeout = setTimeout(() => {
+        this.state = this.targetState;
+        this.pushCurrentState();
+        this.timeout = null;
+      }, TRAVEL_DURATION);
+
+      const direction = this.targetState === "open" ? "down" : "up";
+
+      const url = this.host + '/' + direction;
+
+      this.log('POST' + url);
+
+      fetch(url, { method: "POST" }).then(_ => {
+        cb();
+      });
     };
 
     if (!config) {
@@ -126,15 +147,8 @@ class Screen {
     this.host = host;
 
     this.state = "unknown";
-
-    /*
-    // State caching variables: when the projector is changing state, it
-    // reports the _current_ rather than the _target_ state. This will cache
-    // the last known state (either from polling or toggling it) for 15s
-    this.lastState = null
-    this.lastChecked = null
-    this.checkInterval = 15000; // milliseconds
-    */
+    this.targetState = null;
+    this.timeout = null;
 
     [this.infoService, this.doorService] = this.createServices();
   }

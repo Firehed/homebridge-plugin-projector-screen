@@ -119,7 +119,6 @@ class Screen {
       }
 
       this.log("Set state to ", this.state);
-      this.pushCurrentState();
       this.timeout = setTimeout(() => {
         this.state = this.targetState;
         this.pushCurrentState();
